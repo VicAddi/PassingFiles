@@ -105,3 +105,80 @@ TypeError: can't multiply sequence by non-int of type 'float'
 [2026-04-22 19:26:46,802] {main.py:260} ERROR - FOLIO Test1234: No se generaron templates. Errores: ["• Flujo IPC  BI_017_63.xlsx: can't multiply sequence by non-int of type 'float'"]
 
 INFO:     172.18.0.1:51120 - "POST /gather-and-parse-from-excel-files HTTP/1.1" 422 Unprocessable Entity
+
+
+------------------------------------------------------------
+
+## Para el desarrollador frontend
+
+### ¿Qué cambió en la API?
+
+El endpoint `POST /gather-and-parse-from-excel-files` sigue comportándose igual en el camino feliz: cuando todo sale bien, devuelve el mismo archivo `.xlsx` de siempre.
+
+Lo que cambió es **cómo se reportan los errores**.
+
+---
+
+### Respuestas de error: antes vs ahora
+
+| Situación | Antes | Ahora |
+|---|---|---|
+| Aseguradora no válida | `500` | `422` |
+| Archivos sin datos útiles | `500` (crash) | `422` |
+| Error interno inesperado | `500` mensaje genérico | `500` mensaje con tipo y detalle del error |
+
+---
+
+### Estructura de la respuesta de error
+
+Cuando el status code **no es 200**, el body es JSON con esta forma (estándar FastAPI):
+
+```json
+{
+  "detail": "Texto explicando qué salió mal"
+}
+```
+
+**Ejemplo — aseguradora inválida (422):**
+```json
+{
+  "detail": "Aseguradora inválida: 'Mapfre'. Las aseguradoras válidas son: GNP, Metlife, SMNYL, Atlas, Zurich, Banorte."
+}
+```
+
+**Ejemplo — archivos sin datos útiles (422):**
+```json
+{
+  "detail": "Los archivos proporcionados no generaron datos procesables de Census ni de Siniestralidad.\nErrores encontrados en los archivos:\n• reporte.xlsx: Archivo no permitido. Solo se permiten archivos Excel (.xls, .xlsx)."
+}
+```
+
+El campo `detail` puede contener saltos de línea (`\n`) cuando hay múltiples errores de archivos. Se puede hacer `detail.split('\n')` para renderizarlos como lista.
+
+---
+
+### Cambio recomendado en el frontend
+
+Si actualmente el frontend solo distingue entre "200 OK" y "cualquier otro código" mostrando un mensaje fijo, el único cambio necesario es **leer el campo `detail`** del body en respuestas no-200:
+
+```js
+// Ejemplo genérico (adaptar al framework que uses)
+const response = await fetch('/gather-and-parse-from-excel-files', {
+  method: 'POST',
+  body: formData,
+});
+
+if (!response.ok) {
+  const errorBody = await response.json();
+  const errorMessage = errorBody.detail ?? 'Error desconocido';
+  // Mostrar errorMessage al usuario
+  showErrorNotification(errorMessage);
+  return;
+}
+
+// Flujo normal: descargar el blob
+const blob = await response.blob();
+// ...
+```
+
+No hay cambios en la forma de enviar la petición ni en el formato del archivo de respuesta cuando todo va bien.
