@@ -125,15 +125,9 @@ async def transform_pre_final_template_sinisters_df(
     def _compute_descuento(row):
         tpg = row.get("Tipo de Pago")
         a = row.get("ASEGURADORA")
-        # Reproducimos la lógica original de validación
-        if (
-            pd.notna(a)
-            and pd.notna(tpg)
-            and (tpg in PAYMENT_TYPE_INSURANCE_DISCOUNTS_DICT.keys())
-        ):
-            return PAYMENT_TYPE_INSURANCE_DISCOUNTS_DICT[tpg][a]
-        else:
-            return np.nan
+        if pd.notna(a) and pd.notna(tpg):
+            return PAYMENT_TYPE_INSURANCE_DISCOUNTS_DICT.get(tpg, {}).get(a, np.nan)
+        return np.nan
 
     if {"Tipo de Pago", "ASEGURADORA"}.issubset(final_template_sinisters_df.columns):
         percentage_discount_s_t = time.time()
@@ -169,14 +163,22 @@ async def transform_pre_final_template_sinisters_df(
             excel_file_name,
         )
         df = df.copy()
+        # Garantizar tipo numérico en la columna de descuento antes de cualquier aritmética
+        if "%descuento aplicado" in df.columns:
+            df["%descuento aplicado"] = pd.to_numeric(
+                df["%descuento aplicado"], errors="coerce"
+            )
         # Parseo de IVA Pagado
         if "IVA Pagado" in df.columns:
             logger.info(
                 "[SINIESTERS TEMPLATE TRANSFORMATIONS] SE IDENTIFICÓ COLUMNA DE IVA EN LOS DATOS CALCULANDO 'Pagos' USANDO IVA. ARCHIVO: %s...",
                 excel_file_name,
             )
+            df["Monto Pagado Reportado"] = pd.to_numeric(
+                df["Monto Pagado Reportado"], errors="coerce"
+            )
             df["IVA Pagado"] = pd.to_numeric(
-                df["IVA Pagado"], downcast="float", errors="coerce"
+                df["IVA Pagado"], errors="coerce"
             )
             df["Pagos"] = (df["Monto Pagado Reportado"] + df["IVA Pagado"]) * (
                 1 - df["%descuento aplicado"]
@@ -184,6 +186,9 @@ async def transform_pre_final_template_sinisters_df(
             df = df.rename(columns={"IVA Pagado": "IVA"})
         else:
             if "Monto Pagado Reportado" in df.columns:
+                df["Monto Pagado Reportado"] = pd.to_numeric(
+                    df["Monto Pagado Reportado"], errors="coerce"
+                )
                 # NOTE: REGLA IMPORTANTE
                 # Si no hay IVA Pagado se añade 10% al Monto Pagado Reportado
                 df["Pagos"] = (df["Monto Pagado Reportado"] * (1 + 0.10)) * (
