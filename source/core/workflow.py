@@ -118,8 +118,12 @@ async def gather_parse_and_structure_census_and_sinisters_templates_data_from_an
             "ARCHIVO EXCEL %s NO CONTIENE INFORMACIÓN PARA LLENAR LO TEMPLATES.",
             excel_file_name,
         )
+        reasoning_table = pd.concat(
+            reasoning_tables_df_list, axis=0, join="outer", ignore_index=True
+        )
         return {
             "excel_file_name": excel_file_name,
+            "reasoning_table": reasoning_table,
             "census_template": pd.DataFrame(),
             "sinisters_template": pd.DataFrame(),
         }

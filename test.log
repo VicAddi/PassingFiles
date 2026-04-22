@@ -1,30 +1,17 @@
-[2026-04-20 23:54:56,107] {data_parsing.py:63} INFO - PARSEANDO RESPUESTA GENERADA POR EL LLM PARA OBTENER UN DICCIONARIO DE PYTHON
-
-[2026-04-20 23:54:56,107] {data_parsing.py:112} INFO - EVALUANDO QUE EL SCHEMA GENERADO POR EL MODELO SEA EL CORRECTO
-
-[2026-04-20 23:54:56,110] {data_parsing.py:118} INFO - RESPUESTA DEL MODELO PARSEADA Y VALIDAD CON ÉXITO.
-
-[2026-04-20 23:54:56,110] {data_analyzer.py:96} INFO - ¡RESPUESTA DEL LLM PARSEADA!. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: TERREMOTO_ERUPCION_VOLCANIC(TE). DURACIÓN 0.00 SEGUNDOS
-
-[2026-04-20 23:54:57,535] {data_analyzer.py:75} INFO - LLAMADA DEL LLM RECIBIDA. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER). DURACIÓN 59.13 SEGUNDOS
-
-[2026-04-20 23:54:57,536] {data_analyzer.py:82} INFO - PARSEANDO RESPUESTA DEL LLM. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER).
-
-[2026-04-20 23:54:57,536] {data_parsing.py:63} INFO - PARSEANDO RESPUESTA GENERADA POR EL LLM PARA OBTENER UN DICCIONARIO DE PYTHON
-
-[2026-04-20 23:54:57,536] {data_parsing.py:112} INFO - EVALUANDO QUE EL SCHEMA GENERADO POR EL MODELO SEA EL CORRECTO
-
-[2026-04-20 23:54:57,538] {data_parsing.py:118} INFO - RESPUESTA DEL MODELO PARSEADA Y VALIDAD CON ÉXITO.
-
-[2026-04-20 23:54:57,538] {data_analyzer.py:96} INFO - ¡RESPUESTA DEL LLM PARSEADA!. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER). DURACIÓN 0.00 SEGUNDOS
-
-[2026-04-20 23:54:57,540] {workflow.py:92} INFO - FILE: Flujo IPC  BI_017_63.xlsx TABLA DE RESULTADOS DE TAGGEO DE PESTAÑAS COMPUTADA dimensión -> (21, 5)
-
-[2026-04-20 23:54:57,541] {workflow.py:117} WARNING - ARCHIVO EXCEL Flujo IPC  BI_017_63.xlsx NO CONTIENE INFORMACIÓN PARA LLENAR LO TEMPLATES.
-
-[2026-04-20 23:54:57,542] {main.py:158} INFO - ARCHIVO Flujo IPC  BI_017_63.xlsx PROCESADO EN 61.54 SEGUNDOS
-
-[2026-04-20 23:54:57,543] {main.py:289} ERROR - Error in Extracting and Validating Data: No objects to concatenate
+{data_parsing.py:63} INFO - PARSEANDO RESPUESTA GENERADA POR EL LLM PARA OBTENER UN DICCIONARIO DE PYTHON
+{data_parsing.py:112} INFO - EVALUANDO QUE EL SCHEMA GENERADO POR EL MODELO SEA EL CORRECTO
+{data_parsing.py:118} INFO - RESPUESTA DEL MODELO PARSEADA Y VALIDAD CON ÉXITO.
+{data_analyzer.py:96} INFO - ¡RESPUESTA DEL LLM PARSEADA!. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: TERREMOTO_ERUPCION_VOLCANIC(TE). DURACIÓN 0.00 SEGUNDOS
+{data_analyzer.py:75} INFO - LLAMADA DEL LLM RECIBIDA. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER). DURACIÓN 59.13 SEGUNDOS
+{data_analyzer.py:82} INFO - PARSEANDO RESPUESTA DEL LLM. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER).
+{data_parsing.py:63} INFO - PARSEANDO RESPUESTA GENERADA POR EL LLM PARA OBTENER UN DICCIONARIO DE PYTHON
+{data_parsing.py:112} INFO - EVALUANDO QUE EL SCHEMA GENERADO POR EL MODELO SEA EL CORRECTO
+{data_parsing.py:118} INFO - RESPUESTA DEL MODELO PARSEADA Y VALIDAD CON ÉXITO.
+{data_analyzer.py:96} INFO - ¡RESPUESTA DEL LLM PARSEADA!. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER). DURACIÓN 0.00 SEGUNDOS
+{workflow.py:92} INFO - FILE: Flujo IPC  BI_017_63.xlsx TABLA DE RESULTADOS DE TAGGEO DE PESTAÑAS COMPUTADA dimensión -> (21, 5)
+{workflow.py:117} WARNING - ARCHIVO EXCEL Flujo IPC  BI_017_63.xlsx NO CONTIENE INFORMACIÓN PARA LLENAR LO TEMPLATES.
+{main.py:158} INFO - ARCHIVO Flujo IPC  BI_017_63.xlsx PROCESADO EN 61.54 SEGUNDOS
+{main.py:289} ERROR - Error in Extracting and Validating Data: No objects to concatenate
 
 Traceback (most recent call last):
 
@@ -53,3 +40,12 @@ Traceback (most recent call last):
 ValueError: No objects to concatenate
 
 INFO:     172.18.0.1:54700 - "POST /gather-and-parse-from-excel-files HTTP/1.1" 500 Internal Server Error
+
+
+**fix:** agregar manejo de errores por archivo y respuestas de error de API más descriptivas
+
+* **workflow.py:** incluir `reasoning_table` en el retorno temprano cuando ninguna hoja está etiquetada como CENSUS/SINIESTRALIDAD, corrigiendo un fallo causado por `pd.concat` sobre una lista vacía cuando todos los archivos de entrada no contienen datos procesables
+* **main.py:** envolver `process_one_file` en un bloque `try/except` para que el fallo de un solo archivo ya no detenga todo el lote; los archivos fallidos se recopilan y se informan en el detalle del error de la respuesta
+* **main.py:** reemplazar el HTTP 500 genérico por HTTP 422 para errores corregibles por el usuario (compañía de seguros inválida, no se encontraron datos procesables); capturar y relanzar `HTTPException` antes del manejador genérico para evitar envolver errores 4xx como 500
+* **main.py:** proteger todas las llamadas a `pd.concat` contra listas vacías; proporcionar `DataFrames` vacíos con columnas correctas como alternativa cuando un tipo de plantilla no tiene datos
+* **main.py:** el detalle del error ahora incluye mensajes de error por archivo para que el frontend pueda mostrar qué salió mal

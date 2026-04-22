@@ -7,7 +7,12 @@ import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from ..config import MAX_EXCEL_FILES_CONCURRENCY, PAYMENT_TYPE_INSURANCE_DISCOUNTS_DICT
+from ..config import (
+    FINAL_CENSUS_TEMPLATE_COLUMN_NAMES,
+    FINAL_SINISTER_TEMPLATE_COLUMN_NAMES,
+    MAX_EXCEL_FILES_CONCURRENCY,
+    PAYMENT_TYPE_INSURANCE_DISCOUNTS_DICT,
+)
 from ..core.workflow import (
     gather_parse_and_structure_census_and_sinisters_templates_data_from_an_excel_file,
 )
@@ -124,18 +129,30 @@ async def process_one_file(
     """
     Procesa un único UploadFile: lectura del contenido y
     llamada a la función de extracción/parsing dentro del semáforo.
+    En caso de error, devuelve un dict con la clave 'processing_error'
+    en lugar de propagar la excepción, para que un fallo individual
+    no cancele el procesamiento del resto de archivos.
     """
     s_t = time.time()
+    excel_file_name = getattr(uploaded_file, "filename", None) or "archivo desconocido"
 
-    # Lectura de datos del archivo
-    file_data_dict = await get_file_data_dict_using_upload_file(uploaded_file)
-    excel_file_name = file_data_dict["file_name"]
-    excel_file_bytes = file_data_dict["file_bytes"]
-    excel_file_mime_type = file_data_dict["file_mime_type"]
+    try:
+        # Lectura de datos del archivo
+        file_data_dict = await get_file_data_dict_using_upload_file(uploaded_file)
+        excel_file_name = file_data_dict["file_name"]
+        excel_file_bytes = file_data_dict["file_bytes"]
+        excel_file_mime_type = file_data_dict["file_mime_type"]
 
-    # Aplicar semáforo durante la llamada de procesamiento intensivo
-    if semaphore: # pragma: no cover 
-        async with semaphore:
+        # Aplicar semáforo durante la llamada de procesamiento intensivo
+        if semaphore:  # pragma: no cover
+            async with semaphore:
+                result = await gather_parse_and_structure_census_and_sinisters_templates_data_from_an_excel_file(
+                    insurance_company_name=insurance_company_name,
+                    excel_file_name=excel_file_name,
+                    excel_file_bytes=excel_file_bytes,
+                    excel_file_mime_type=excel_file_mime_type,
+                )
+        else:
             result = await gather_parse_and_structure_census_and_sinisters_templates_data_from_an_excel_file(
                 insurance_company_name=insurance_company_name,
                 excel_file_name=excel_file_name,
@@ -143,24 +160,28 @@ async def process_one_file(
                 excel_file_mime_type=excel_file_mime_type,
             )
 
-    else:
-        result = await gather_parse_and_structure_census_and_sinisters_templates_data_from_an_excel_file(
-            insurance_company_name=insurance_company_name,
-            excel_file_name=excel_file_name,
-            excel_file_bytes=excel_file_bytes,
-            excel_file_mime_type=excel_file_mime_type,
+        await uploaded_file.close()
+
+        e_t = time.time()
+        logger.info(
+            "ARCHIVO %s PROCESADO EN %s SEGUNDOS",
+            excel_file_name,
+            "{:,.2f}".format(e_t - s_t),
         )
+        return result
 
-    # Cerrar el archivo UploadFile
-    await uploaded_file.close()
-
-    e_t = time.time()
-    logger.info(
-        "ARCHIVO %s PROCESADO EN %s SEGUNDOS",
-        excel_file_name,
-        "{:,.2f}".format(e_t - s_t),
-    )
-    return result
+    except Exception as e:
+        logger.exception(
+            "ERROR PROCESANDO ARCHIVO %s: %s", excel_file_name, e
+        )
+        try:
+            await uploaded_file.close()
+        except Exception:
+            pass
+        return {
+            "excel_file_name": excel_file_name,
+            "processing_error": str(e),
+        }
 
 
 @app.post("/gather-and-parse-from-excel-files")
@@ -170,7 +191,7 @@ async def gather_and_parse_data_from_many_files(
     excel_files: list[UploadFile] = File(...),
 ):
     try:
-        valid_insurance_companuy_names = [
+        valid_insurance_company_names = [
             "GNP",
             "Metlife",
             "SMNYL",
@@ -178,12 +199,15 @@ async def gather_and_parse_data_from_many_files(
             "Zurich",
             "Banorte",
         ]
-        if insurance_company_name not in valid_insurance_companuy_names:
-            raise ValueError(
-                f"¡ASEGURADORA INVÁLIDA! Las aseguradoras a las que tengo acceso son:\n{json.dumps(
-                    valid_insurance_companuy_names, indent=2, ensure_ascii=False
-                )}"
+        if insurance_company_name not in valid_insurance_company_names:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Aseguradora inválida: '{insurance_company_name}'. "
+                    f"Las aseguradoras válidas son: {', '.join(valid_insurance_company_names)}."
+                ),
             )
+
         # Semáforo para limitar la concurrencia de procesamiento de archivos
         # NOTE: Comentado porqué el comportamiendo no fue el esperado. Estudiar, investigar, aplicar correctamente.
         # semaphore = asyncio.Semaphore(MAX_EXCEL_FILES_CONCURRENCY)
@@ -203,36 +227,64 @@ async def gather_and_parse_data_from_many_files(
         ]
         results = await asyncio.gather(*tasks)
 
-        # 5) Concatenación de dataframes de cada resultado
-        # Filtrar resultados válidos (en caso de que alguno falle) y extraer las llaves
-        census_templates = []
-        sinisters_templates = []
+        # Separar resultados exitosos de errores por archivo
+        file_errors: list[str] = []
+        census_templates: list[pd.DataFrame] = []
+        sinisters_templates: list[pd.DataFrame] = []
         summary_tables: list[pd.DataFrame] = []
+
         for res in results:
-            if res and "reasoning_table" in res:
+            if not res:
+                continue
+            if "processing_error" in res:
+                file_errors.append(
+                    f"• {res['excel_file_name']}: {res['processing_error']}"
+                )
+                continue
+            if "reasoning_table" in res:
                 summary_tables.append(res["reasoning_table"])
-            if res and "census_template" in res:
+            if "census_template" in res and not res["census_template"].empty:
                 census_templates.append(res["census_template"])
-            if res and "sinisters_template" in res:
+            if "sinisters_template" in res and not res["sinisters_template"].empty:
                 sinisters_templates.append(res["sinisters_template"])
 
-        if not census_templates or not sinisters_templates:
+        # Si ningún archivo produjo datos útiles, devolvemos un error descriptivo
+        if not census_templates and not sinisters_templates:
+            detail_parts = [
+                "Los archivos proporcionados no generaron datos procesables "
+                "de Census ni de Siniestralidad."
+            ]
+            if file_errors:
+                detail_parts.append("Errores encontrados en los archivos:")
+                detail_parts.extend(file_errors)
             logger.error(
-                "No se pudieron generar templates a partir de los archivos proporcionados."
+                "FOLIO %s: No se generaron templates. Errores: %s",
+                folio_id,
+                file_errors,
             )
             raise HTTPException(
-                status_code=500,
-                detail="Internal server error during data extraction and parsing.",
+                status_code=422,
+                detail="\n".join(detail_parts),
             )
 
-        # Concatenar todos los DataFrames
-        complete_summary_tables = pd.concat(
-            summary_tables, axis=0, join="outer", ignore_index=True
+        # Concatenar todos los DataFrames (con fallback seguro si alguna lista está vacía)
+        complete_summary_tables = (
+            pd.concat(summary_tables, axis=0, join="outer", ignore_index=True)
+            if summary_tables
+            else pd.DataFrame()
         )
-        complete_census_template = pd.concat(census_templates, ignore_index=True)
-        complete_sinisters_template = pd.concat(sinisters_templates, ignore_index=True)
+        complete_census_template = (
+            pd.concat(census_templates, ignore_index=True)
+            if census_templates
+            else pd.DataFrame(columns=FINAL_CENSUS_TEMPLATE_COLUMN_NAMES)
+        )
+        complete_sinisters_template = (
+            pd.concat(sinisters_templates, ignore_index=True)
+            if sinisters_templates
+            else pd.DataFrame(columns=FINAL_SINISTER_TEMPLATE_COLUMN_NAMES)
+        )
 
-        # 3) Descargar: crear Excel final con las dos hojas
+        # Descargar: crear Excel final con las cuatro hojas
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             # NOTE: ¡IMPORTANTE! Devolvemos la tabla de descuentos como parte del resultado
@@ -285,11 +337,15 @@ async def gather_and_parse_data_from_many_files(
                 )
             },
         )
+
+    except HTTPException:
+        raise  # Propagar HTTPExceptions sin envolver en un 500 genérico
+
     except Exception as e:
         logger.exception("Error in Extracting and Validating Data: %s", e)
         raise HTTPException(
             status_code=500,
-            detail="Internal server error during data extraction and parsing.",
+            detail=f"Error interno durante la extracción y validación de datos: {type(e).__name__}: {e}",
         ) from e
 
 
