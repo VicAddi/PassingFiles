@@ -1,0 +1,55 @@
+[2026-04-20 23:54:56,107] {data_parsing.py:63} INFO - PARSEANDO RESPUESTA GENERADA POR EL LLM PARA OBTENER UN DICCIONARIO DE PYTHON
+
+[2026-04-20 23:54:56,107] {data_parsing.py:112} INFO - EVALUANDO QUE EL SCHEMA GENERADO POR EL MODELO SEA EL CORRECTO
+
+[2026-04-20 23:54:56,110] {data_parsing.py:118} INFO - RESPUESTA DEL MODELO PARSEADA Y VALIDAD CON ÉXITO.
+
+[2026-04-20 23:54:56,110] {data_analyzer.py:96} INFO - ¡RESPUESTA DEL LLM PARSEADA!. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: TERREMOTO_ERUPCION_VOLCANIC(TE). DURACIÓN 0.00 SEGUNDOS
+
+[2026-04-20 23:54:57,535] {data_analyzer.py:75} INFO - LLAMADA DEL LLM RECIBIDA. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER). DURACIÓN 59.13 SEGUNDOS
+
+[2026-04-20 23:54:57,536] {data_analyzer.py:82} INFO - PARSEANDO RESPUESTA DEL LLM. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER).
+
+[2026-04-20 23:54:57,536] {data_parsing.py:63} INFO - PARSEANDO RESPUESTA GENERADA POR EL LLM PARA OBTENER UN DICCIONARIO DE PYTHON
+
+[2026-04-20 23:54:57,536] {data_parsing.py:112} INFO - EVALUANDO QUE EL SCHEMA GENERADO POR EL MODELO SEA EL CORRECTO
+
+[2026-04-20 23:54:57,538] {data_parsing.py:118} INFO - RESPUESTA DEL MODELO PARSEADA Y VALIDAD CON ÉXITO.
+
+[2026-04-20 23:54:57,538] {data_analyzer.py:96} INFO - ¡RESPUESTA DEL LLM PARSEADA!. NOMBRE DE ARCHIVO: Flujo IPC  BI_017_63.xlsx. NOMBRE DE PESTAÑA: AERONAVES(AER). DURACIÓN 0.00 SEGUNDOS
+
+[2026-04-20 23:54:57,540] {workflow.py:92} INFO - FILE: Flujo IPC  BI_017_63.xlsx TABLA DE RESULTADOS DE TAGGEO DE PESTAÑAS COMPUTADA dimensión -> (21, 5)
+
+[2026-04-20 23:54:57,541] {workflow.py:117} WARNING - ARCHIVO EXCEL Flujo IPC  BI_017_63.xlsx NO CONTIENE INFORMACIÓN PARA LLENAR LO TEMPLATES.
+
+[2026-04-20 23:54:57,542] {main.py:158} INFO - ARCHIVO Flujo IPC  BI_017_63.xlsx PROCESADO EN 61.54 SEGUNDOS
+
+[2026-04-20 23:54:57,543] {main.py:289} ERROR - Error in Extracting and Validating Data: No objects to concatenate
+
+Traceback (most recent call last):
+
+  File "/app/source/api/main.py", line 229, in gather_and_parse_data_from_many_files
+
+    complete_summary_tables = pd.concat(
+
+                              ^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/reshape/concat.py", line 382, in concat
+
+    op = _Concatenator(
+
+         ^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/reshape/concat.py", line 445, in __init__
+
+    objs, keys = self._clean_keys_and_objs(objs, keys)
+
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/reshape/concat.py", line 507, in _clean_keys_and_objs
+
+    raise ValueError("No objects to concatenate")
+
+ValueError: No objects to concatenate
+
+INFO:     172.18.0.1:54700 - "POST /gather-and-parse-from-excel-files HTTP/1.1" 500 Internal Server Error
