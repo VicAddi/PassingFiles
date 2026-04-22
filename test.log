@@ -41,11 +41,67 @@ ValueError: No objects to concatenate
 
 INFO:     172.18.0.1:54700 - "POST /gather-and-parse-from-excel-files HTTP/1.1" 500 Internal Server Error
 
+-------------------------------------------------
+    return await loop.run_in_executor(None, func_call)
 
-**fix:** agregar manejo de errores por archivo y respuestas de error de API más descriptivas
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* **workflow.py:** incluir `reasoning_table` en el retorno temprano cuando ninguna hoja está etiquetada como CENSUS/SINIESTRALIDAD, corrigiendo un fallo causado por `pd.concat` sobre una lista vacía cuando todos los archivos de entrada no contienen datos procesables
-* **main.py:** envolver `process_one_file` en un bloque `try/except` para que el fallo de un solo archivo ya no detenga todo el lote; los archivos fallidos se recopilan y se informan en el detalle del error de la respuesta
-* **main.py:** reemplazar el HTTP 500 genérico por HTTP 422 para errores corregibles por el usuario (compañía de seguros inválida, no se encontraron datos procesables); capturar y relanzar `HTTPException` antes del manejador genérico para evitar envolver errores 4xx como 500
-* **main.py:** proteger todas las llamadas a `pd.concat` contra listas vacías; proporcionar `DataFrames` vacíos con columnas correctas como alternativa cuando un tipo de plantilla no tiene datos
-* **main.py:** el detalle del error ahora incluye mensajes de error por archivo para que el frontend pueda mostrar qué salió mal
+  File "/usr/lib64/python3.12/concurrent/futures/thread.py", line 58, in run
+
+    result = self.fn(*self.args, **self.kwargs)
+
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/source/core/data_processing/data_transformations.py", line 189, in _process_pagos_con_iva
+
+    df["Pagos"] = (df["Monto Pagado Reportado"] * (1 + 0.10)) * (
+
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/ops/common.py", line 76, in new_method
+
+    return method(self, other)
+
+           ^^^^^^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/arraylike.py", line 202, in __mul__
+
+    return self._arith_method(other, operator.mul)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/series.py", line 6154, in _arith_method
+
+    return base.IndexOpsMixin._arith_method(self, other, op)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/base.py", line 1391, in _arith_method
+
+    result = ops.arithmetic_op(lvalues, rvalues, op)
+
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/ops/array_ops.py", line 283, in arithmetic_op
+
+    res_values = _na_arithmetic_op(left, right, op)  # type: ignore[arg-type]
+
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/ops/array_ops.py", line 227, in _na_arithmetic_op
+
+    result = _masked_arith_op(left, right, op)
+
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/.venv/lib64/python3.12/site-packages/pandas/core/ops/array_ops.py", line 182, in _masked_arith_op
+
+    result[mask] = op(xrav[mask], y)
+
+                   ^^^^^^^^^^^^^^^^^
+
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[2026-04-22 19:26:46,802] {main.py:260} ERROR - FOLIO Test1234: No se generaron templates. Errores: ["• Flujo IPC  BI_017_63.xlsx: can't multiply sequence by non-int of type 'float'"]
+
+INFO:     172.18.0.1:51120 - "POST /gather-and-parse-from-excel-files HTTP/1.1" 422 Unprocessable Entity
