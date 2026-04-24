@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proceso Consolidación RR-8 — AXA</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #F7F5F2;
+    font-family: 'IBM Plex Sans', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #1C1B18;
+  }
+  header {
+    padding: 14px 28px 10px;
+    border-bottom: 1px solid #D9D5CE;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .hd-left .eyebrow {
+    font-size: 10px;
+    color: #9B9690;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .hd-left h1 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  #phaseLabel {
+    font-size: 12.5px;
+    color: #4A4840;
+    margin-top: 3px;
+    min-height: 17px;
+    max-width: 600px;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn {
+    padding: 7px 15px;
+    border: 1px solid #D9D5CE;
+    background: white;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    color: #1C1B18;
+    transition: background 0.12s;
+    user-select: none;
+  }
+  .btn:hover { background: #EEECEA; }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn.primary { background: #1B4F8A; color: white; border-color: #1B4F8A; }
+  .btn.primary:hover { background: #153e6e; }
+  .phase-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #6B6860;
+    padding: 4px 10px;
+    background: #EEECEA;
+    border-radius: 20px;
+    min-width: 50px;
+    text-align: center;
+  }
+  .svg-wrap { flex: 1; overflow: hidden; position: relative; background: #F7F5F2; }
+  #diagram { width: 100%; height: 100%; display: block; overflow: visible; }
+
+  .node { transition: opacity 0.5s ease, transform 0.5s ease; transform-origin: center; }
+  .node.hidden { opacity: 0; transform: scale(0.88); pointer-events: none; }
+  .edge { transition: opacity 0.4s ease; }
+  .edge.hidden { opacity: 0; }
+
+  #progressBar {
+    height: 2px;
+    background: #1B4F8A;
+    width: 0%;
+    transition: width 0.4s ease;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-left">
+    <div class="eyebrow">Reporte Regulatorio 8 · Proceso interno</div>
+    <h1>Consolidación del RR-8 en una Institución Aseguradora (AXA)</h1>
+    <div id="phaseLabel">—</div>
+  </div>
+  <div class="controls">
+    <button class="btn" id="btnPrev" onclick="prevPhase()">← Anterior</button>
+    <span class="phase-pill" id="phasePill">0 / 9</span>
+    <button class="btn" id="btnNext" onclick="nextPhase()">Siguiente →</button>
+    <button class="btn primary" id="btnPlay" onclick="togglePlay()">▶ Auto</button>
+  </div>
+</header>
+<div id="progressBar"></div>
+
+<div class="svg-wrap">
+<svg id="diagram" viewBox="0 0 1440 640" preserveAspectRatio="xMidYMid meet"><g id="dc">
+<defs>
+  <marker id="aBlue" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#1B4F8A"/>
+  </marker>
+  <marker id="aGray" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#6B6860"/>
+  </marker>
+  <marker id="aAmber" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#C07B2A"/>
+  </marker>
+  <marker id="aPurple" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#6B42A0"/>
+  </marker>
+  <marker id="aGreen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#2A7A4A"/>
+  </marker>
+</defs>
+
+<!-- ════════════════ SWIMLANE BACKGROUND ROWS ════════════════ -->
+<!-- Rendered first so they appear behind everything -->
+
+<!-- Row backgrounds (alternating) -->
+<rect x="0" y="80" width="1440" height="58" fill="#F7F5F2"/>
+<rect x="0" y="138" width="1440" height="58" fill="#F0EEEB"/>
+<rect x="0" y="196" width="1440" height="58" fill="#F7F5F2"/>
+<rect x="0" y="254" width="1440" height="58" fill="#F0EEEB"/>
+<rect x="0" y="312" width="1440" height="58" fill="#F7F5F2"/>
+<rect x="0" y="370" width="1440" height="58" fill="#F0EEEB"/>
+<rect x="0" y="428" width="1440" height="58" fill="#F7F5F2"/>
+<rect x="0" y="486" width="1440" height="58" fill="#F0EEEB"/>
+<rect x="0" y="544" width="1440" height="58" fill="#F7F5F2"/>
+
+<!-- Row separator lines -->
+<line x1="0" y1="80" x2="1440" y2="80" stroke="#D9D5CE" stroke-width="1"/>
+<line x1="0" y1="138" x2="1440" y2="138" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="196" x2="1440" y2="196" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="254" x2="1440" y2="254" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="312" x2="1440" y2="312" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="370" x2="1440" y2="370" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="428" x2="1440" y2="428" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="486" x2="1440" y2="486" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="544" x2="1440" y2="544" stroke="#D9D5CE" stroke-width="0.6"/>
+<line x1="0" y1="602" x2="1440" y2="602" stroke="#D9D5CE" stroke-width="1"/>
+
+<!-- Dept column header BG -->
+<rect x="0" y="0" width="162" height="640" fill="#1C1B18" opacity="0.03"/>
+<line x1="162" y1="0" x2="162" y2="640" stroke="#D9D5CE" stroke-width="1.2"/>
+
+<!-- ════════════ DEPT LABELS (left column) ════════════ -->
+<!-- Row 0: Header -->
+<rect x="0" y="0" width="162" height="80" fill="#1C1B18"/>
+<text x="81" y="30" fill="white" font-family="IBM Plex Sans" font-size="10" font-weight="500" text-anchor="middle" opacity="0.7">ÁREA</text>
+<text x="81" y="50" fill="white" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.5">Institución Aseguradora</text>
+
+<!-- Step header row -->
+<rect x="162" y="0" width="1278" height="80" fill="#1C1B18" opacity="0.015"/>
+<text x="800" y="36" fill="#1C1B18" font-family="IBM Plex Sans" font-size="11" font-weight="500" text-anchor="middle" opacity="0.5">PASOS DEL PROCESO — de izquierda a derecha</text>
+
+<!-- Row labels (departments) -->
+<!-- Row 1: Cumplimiento Regulatorio y=80-138 cy=109 -->
+<rect x="0" y="80" width="162" height="58" fill="#FBF0E0" opacity="0.6"/>
+<text x="81" y="105" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Cumplimiento</text>
+<text x="81" y="119" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.75">Regulatorio</text>
+
+<!-- Row 2: Alta Dirección / Comités y=138-196 cy=167 -->
+<rect x="0" y="138" width="162" height="58" fill="#EEF3FA" opacity="0.5"/>
+<text x="81" y="163" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Alta Dirección</text>
+<text x="81" y="177" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.75">Comités</text>
+
+<!-- Row 3: Actuaría y=196-254 cy=225 -->
+<rect x="0" y="196" width="162" height="58" fill="#1B4F8A" opacity="0.08"/>
+<text x="81" y="222" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="9.5" font-weight="700" text-anchor="middle">Actuaría</text>
+<text x="81" y="236" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Dirección Técnica</text>
+
+<!-- Row 4: Suscripción / Emisión y=254-312 cy=283 -->
+<rect x="0" y="254" width="162" height="58" fill="#E8F2EC" opacity="0.5"/>
+<text x="81" y="279" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Suscripción</text>
+<text x="81" y="293" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.75">Emisión</text>
+
+<!-- Row 5: Siniestros y=312-370 cy=341 -->
+<rect x="0" y="312" width="162" height="58" fill="#E8F2EC" opacity="0.5"/>
+<text x="81" y="338" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Siniestros</text>
+<text x="81" y="352" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Ajuste y reservas</text>
+
+<!-- Row 6: Reaseguro y=370-428 cy=399 -->
+<rect x="0" y="370" width="162" height="58" fill="#E8F2EC" opacity="0.5"/>
+<text x="81" y="395" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Reaseguro</text>
+<text x="81" y="409" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Cedido · tomado</text>
+
+<!-- Row 7: Cierre Contable y=428-486 cy=457 -->
+<rect x="0" y="428" width="162" height="58" fill="#FBF0E0" opacity="0.5"/>
+<text x="81" y="453" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Cierre Contable</text>
+<text x="81" y="467" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Contraloría / RR-7</text>
+
+<!-- Row 8: Sistemas / TI y=486-544 cy=515 -->
+<rect x="0" y="486" width="162" height="58" fill="#F0EBF8" opacity="0.6"/>
+<text x="81" y="511" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Sistemas / TI</text>
+<text x="81" y="525" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">BI · ETL · SEIVE</text>
+
+<!-- Row 9: Auditoría Interna y=544-602 cy=573 -->
+<rect x="0" y="544" width="162" height="58" fill="#EEECEA" opacity="0.7"/>
+<text x="81" y="569" fill="#4A4840" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Auditoría Interna</text>
+<text x="81" y="583" fill="#4A4840" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Control interno</text>
+
+<!-- ════════════════ STEP COLUMN LINES ════════════════ -->
+<!-- 9 steps, x positions: 162 + n*142, width 142 each -->
+<!-- Step boundaries at: 162, 304, 446, 588, 730, 872, 1014, 1156, 1298, 1440 -->
+<line x1="304" y1="0" x2="304" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+<line x1="446" y1="0" x2="446" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+<line x1="588" y1="0" x2="588" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+<line x1="730" y1="0" x2="730" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+<line x1="872" y1="0" x2="872" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+<line x1="1014" y1="0" x2="1014" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+<line x1="1156" y1="0" x2="1156" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+<line x1="1298" y1="0" x2="1298" y2="640" stroke="#D9D5CE" stroke-width="0.5" stroke-dasharray="4,3"/>
+
+<!-- Step number labels in header row -->
+<text x="233" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P1</text>
+<text x="375" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P2</text>
+<text x="517" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P3</text>
+<text x="659" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P4</text>
+<text x="801" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P5</text>
+<text x="943" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P6</text>
+<text x="1085" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P7</text>
+<text x="1227" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P8</text>
+<text x="1369" y="28" fill="#1C1B18" font-family="IBM Plex Mono" font-size="9" text-anchor="middle" opacity="0.3">P9</text>
+
+<!-- ════════════════ PROCESS FLOW ════════════════ -->
+<!-- 
+  Step x-centers: P1=233 P2=375 P3=517 P4=659 P5=801 P6=943 P7=1085 P8=1227 P9=1369
+  Row cy: R1=109 R2=167 R3=225 R4=283 R5=341 R6=399 R7=457 R8=515 R9=573
+  
+  Step widths: 120px, height 40px (cells: cx-60 to cx+60, cy-18 to cy+18)
+-->
+
+<!-- ── CONNECTOR ARROWS (behind step cells) ── -->
+
+<!-- Horizontal flow arrow from each step to the next (center row: Actuaría y=225) -->
+<g class="edge hidden" data-phase="2">
+  <line x1="293" y1="225" x2="315" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+<g class="edge hidden" data-phase="3">
+  <line x1="435" y1="225" x2="457" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+<g class="edge hidden" data-phase="4">
+  <line x1="577" y1="225" x2="599" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+<g class="edge hidden" data-phase="5">
+  <line x1="719" y1="225" x2="741" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+<g class="edge hidden" data-phase="6">
+  <line x1="861" y1="225" x2="883" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+<g class="edge hidden" data-phase="7">
+  <line x1="1003" y1="225" x2="1025" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+<g class="edge hidden" data-phase="8">
+  <line x1="1145" y1="225" x2="1167" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+<g class="edge hidden" data-phase="9">
+  <line x1="1287" y1="225" x2="1309" y2="225" stroke="#1B4F8A" stroke-width="1.5" marker-end="url(#aBlue)"/>
+</g>
+
+<!-- Vertical connectors from Actuaría row to department rows (per step) -->
+
+<!-- Step 1: P1 x=233. Cumplimiento R1→ (down from R1=109 to R3=225) -->
+<g class="edge hidden" data-phase="1">
+  <line x1="233" y1="127" x2="233" y2="207" stroke="#C07B2A" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#aAmber)"/>
+</g>
+
+<!-- Step 2: P2 x=375. Down from R3 to R4,R5,R6,R8 -->
+<g class="edge hidden" data-phase="2">
+  <line x1="375" y1="243" x2="375" y2="265" stroke="#2A7A4A" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#aGreen)"/>
+  <line x1="375" y1="301" x2="375" y2="323" stroke="#2A7A4A" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#aGreen)"/>
+  <line x1="375" y1="359" x2="375" y2="381" stroke="#2A7A4A" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#aGreen)"/>
+  <line x1="375" y1="243" x2="375" y2="497" stroke="#4A1F8A" stroke-width="1" stroke-dasharray="3,2" opacity="0.4"/>
+  <line x1="375" y1="497" x2="375" y2="497" stroke="#4A1F8A" stroke-width="1" marker-end="url(#aPurple)"/>
+</g>
+
+<!-- Step 3: P3 x=517. Actuaría + TI -->
+<g class="edge hidden" data-phase="3">
+  <line x1="517" y1="243" x2="517" y2="497" stroke="#4A1F8A" stroke-width="1" stroke-dasharray="3,2" opacity="0.5" marker-end="url(#aPurple)"/>
+</g>
+
+<!-- Step 4: P4 x=659. Actuaría + Cierre Contable -->
+<g class="edge hidden" data-phase="4">
+  <line x1="659" y1="243" x2="659" y2="439" stroke="#C07B2A" stroke-width="1" stroke-dasharray="3,2" opacity="0.5" marker-end="url(#aAmber)"/>
+</g>
+
+<!-- Step 5: P5 x=801. TI -->
+<g class="edge hidden" data-phase="5">
+  <line x1="801" y1="243" x2="801" y2="497" stroke="#4A1F8A" stroke-width="1" stroke-dasharray="3,2" opacity="0.5" marker-end="url(#aPurple)"/>
+</g>
+
+<!-- Step 6: P6 x=943. Actuaría + Cierre Contable -->
+<g class="edge hidden" data-phase="6">
+  <line x1="943" y1="243" x2="943" y2="439" stroke="#C07B2A" stroke-width="1" stroke-dasharray="3,2" opacity="0.5" marker-end="url(#aAmber)"/>
+</g>
+
+<!-- Step 7: P7 x=1085. Actuaría + Alta Dirección + Auditoría -->
+<g class="edge hidden" data-phase="7">
+  <line x1="1085" y1="207" x2="1085" y2="149" stroke="#1B4F8A" stroke-width="1" stroke-dasharray="3,2" opacity="0.5" marker-end="url(#aBlue)"/>
+  <line x1="1085" y1="243" x2="1085" y2="555" stroke="#4A4840" stroke-width="1" stroke-dasharray="3,2" opacity="0.4" marker-end="url(#aGray)"/>
+</g>
+
+<!-- Step 8: P8 x=1227. TI only -->
+<g class="edge hidden" data-phase="8">
+  <line x1="1227" y1="243" x2="1227" y2="497" stroke="#4A1F8A" stroke-width="1" stroke-dasharray="3,2" opacity="0.5" marker-end="url(#aPurple)"/>
+</g>
+
+<!-- Step 9: P9 x=1369. Final delivery + Cumplimiento -->
+<g class="edge hidden" data-phase="9">
+  <line x1="1369" y1="207" x2="1369" y2="127" stroke="#C07B2A" stroke-width="1" stroke-dasharray="3,2" opacity="0.5" marker-end="url(#aAmber)"/>
+</g>
+
+<!-- ════════════════ STEP CELLS ════════════════ -->
+<!-- Each cell: rect 120×40 centered at (cx, cy) → x=cx-60, y=cy-18 -->
+
+<!-- 
+  STEP 1: Planeación y Cronograma
+  Active rows: Cumplimiento (R1 cy=109), Actuaría (R3 cy=225)
+-->
+<g class="node hidden" data-phase="1">
+  <!-- Step header in Cumplimiento row -->
+  <rect x="173" y="88" width="120" height="42" rx="3" fill="#FBF0E0" stroke="#C07B2A" stroke-width="1.5"/>
+  <text x="233" y="107" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="9.5" font-weight="600" text-anchor="middle">Planeación</text>
+  <text x="233" y="120" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle" opacity="0.8">y Cronograma</text>
+  <!-- Step label in Actuaría row (main) -->
+  <rect x="173" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="233" y="225" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Calendario alineado</text>
+  <text x="233" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">a fechas CUSF / DOF</text>
+  <!-- Step number badge -->
+  <circle cx="173" cy="109" r="10" fill="#1C1B18"/>
+  <text x="173" y="113" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">1</text>
+</g>
+
+<!-- STEP 2: Extracción de Datos -->
+<g class="node hidden" data-phase="2">
+  <!-- Actuaría row -->
+  <rect x="315" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="375" y="225" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Extracción</text>
+  <text x="375" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">de datos (queries)</text>
+  <!-- Suscripción row -->
+  <rect x="315" y="263" width="120" height="38" rx="3" fill="#E8F2EC" stroke="#2A7A4A" stroke-width="1.2"/>
+  <text x="375" y="280" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Pólizas vigentes</text>
+  <text x="375" y="293" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">endosos · cartera</text>
+  <!-- Siniestros row -->
+  <rect x="315" y="321" width="120" height="38" rx="3" fill="#E8F2EC" stroke="#2A7A4A" stroke-width="1.2"/>
+  <text x="375" y="338" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Siniestros</text>
+  <text x="375" y="351" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">pagados · pendientes</text>
+  <!-- Reaseguro row -->
+  <rect x="315" y="379" width="120" height="38" rx="3" fill="#E8F2EC" stroke="#2A7A4A" stroke-width="1.2"/>
+  <text x="375" y="396" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Reaseguro</text>
+  <text x="375" y="409" fill="#2A7A4A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">cedido · tomado</text>
+  <!-- TI row -->
+  <rect x="315" y="493" width="120" height="36" rx="3" fill="#F0EBF8" stroke="#6B42A0" stroke-width="1.2"/>
+  <text x="375" y="510" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">ETL / DWH</text>
+  <text x="375" y="522" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">Data Warehouse</text>
+  <!-- Badge -->
+  <circle cx="315" cy="225" r="10" fill="#1C1B18"/>
+  <text x="315" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">2</text>
+</g>
+
+<!-- STEP 3: Validación y Limpieza -->
+<g class="node hidden" data-phase="3">
+  <rect x="457" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="517" y="225" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Validación</text>
+  <text x="517" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">y limpieza de datos</text>
+  <rect x="457" y="493" width="120" height="36" rx="3" fill="#F0EBF8" stroke="#6B42A0" stroke-width="1.2"/>
+  <text x="517" y="510" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Control de integridad</text>
+  <text x="517" y="522" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">deduplicación · catálogos</text>
+  <!-- Badge -->
+  <circle cx="457" cy="225" r="10" fill="#1C1B18"/>
+  <text x="457" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">3</text>
+</g>
+
+<!-- STEP 4: Cálculos Actuariales -->
+<g class="node hidden" data-phase="4">
+  <rect x="599" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="659" y="224" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Cálculos Actuariales</text>
+  <text x="659" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">y contables</text>
+  <rect x="599" y="437" width="120" height="36" rx="3" fill="#FBF0E0" stroke="#C07B2A" stroke-width="1.2"/>
+  <text x="659" y="455" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Conciliación RR-7</text>
+  <text x="659" y="467" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">primas · siniestros</text>
+  <!-- Inside Actuaría: more detail -->
+  <text x="659" y="188" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.6">triángulos · IBNR · índices combinados</text>
+  <!-- Badge -->
+  <circle cx="599" cy="225" r="10" fill="#1C1B18"/>
+  <text x="599" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">4</text>
+</g>
+
+<!-- STEP 5: Construcción archivos .TXT -->
+<g class="node hidden" data-phase="5">
+  <rect x="741" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="801" y="224" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Construcción</text>
+  <text x="801" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">archivos .TXT por SESA</text>
+  <rect x="741" y="493" width="120" height="36" rx="3" fill="#F0EBF8" stroke="#6B42A0" stroke-width="1.2"/>
+  <text x="801" y="510" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Layout CUSF</text>
+  <text x="801" y="522" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">formato · longitud · catálogos</text>
+  <!-- Badge -->
+  <circle cx="741" cy="225" r="10" fill="#1C1B18"/>
+  <text x="741" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">5</text>
+</g>
+
+<!-- STEP 6: Conciliaciones cruzadas -->
+<g class="node hidden" data-phase="6">
+  <rect x="883" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="943" y="224" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Conciliaciones</text>
+  <text x="943" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">RR-1 · RR-3 · RR-7</text>
+  <rect x="883" y="437" width="120" height="36" rx="3" fill="#FBF0E0" stroke="#C07B2A" stroke-width="1.2"/>
+  <text x="943" y="455" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Dato único</text>
+  <text x="943" y="467" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">consistencia contable</text>
+  <!-- Badge -->
+  <circle cx="883" cy="225" r="10" fill="#1C1B18"/>
+  <text x="883" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">6</text>
+</g>
+
+<!-- STEP 7: Firma y Certificación Actuarial -->
+<g class="node hidden" data-phase="7">
+  <rect x="1025" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="1085" y="224" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Firma Actuarial</text>
+  <text x="1085" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">escrito de precisiones PDF</text>
+  <!-- Alta Dirección -->
+  <rect x="1025" y="147" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.2"/>
+  <text x="1085" y="165" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Revisión</text>
+  <text x="1085" y="178" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">Comité Técnico</text>
+  <!-- Auditoría -->
+  <rect x="1025" y="553" width="120" height="36" rx="3" fill="#EEECEA" stroke="#9B9690" stroke-width="1.2"/>
+  <text x="1085" y="570" fill="#4A4840" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Revisión de controles</text>
+  <text x="1085" y="582" fill="#4A4840" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">Cap. 3.3 CUSF</text>
+  <!-- Badge -->
+  <circle cx="1025" cy="225" r="10" fill="#1C1B18"/>
+  <text x="1025" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">7</text>
+</g>
+
+<!-- STEP 8: Compresión ZIP → PGP → SEIVE -->
+<g class="node hidden" data-phase="8">
+  <rect x="1167" y="207" width="120" height="38" rx="3" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="1227" y="224" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="8.5" font-weight="500" text-anchor="middle">Envío SEIVE</text>
+  <text x="1227" y="237" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="7.5" text-anchor="middle" opacity="0.75">ZIP → PGP → portal</text>
+  <rect x="1167" y="493" width="120" height="36" rx="3" fill="#F0EBF8" stroke="#6B42A0" stroke-width="1.5"/>
+  <text x="1227" y="510" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle">Compresión + cifrado</text>
+  <text x="1227" y="522" fill="#4A1F8A" font-family="IBM Plex Mono" font-size="7.5" text-anchor="middle" opacity="0.75">.zip → .pgp → upload</text>
+  <!-- Badge -->
+  <circle cx="1167" cy="225" r="10" fill="#1C1B18"/>
+  <text x="1167" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">8</text>
+</g>
+
+<!-- STEP 9: Acuse y Observaciones CNSF -->
+<g class="node hidden" data-phase="9">
+  <!-- CNSF result block (external, shown in Actuaría row as recipient) -->
+  <rect x="1309" y="207" width="120" height="38" rx="3" fill="#1B4F8A"/>
+  <text x="1369" y="224" fill="white" font-family="IBM Plex Sans" font-size="8.5" font-weight="600" text-anchor="middle">Acuse CNSF</text>
+  <text x="1369" y="237" fill="white" font-family="IBM Plex Sans" font-size="7" text-anchor="middle" opacity="0.8">validación · registro</text>
+  <!-- Cumplimiento response -->
+  <rect x="1309" y="88" width="120" height="42" rx="3" fill="#FBF0E0" stroke="#C07B2A" stroke-width="1.5"/>
+  <text x="1369" y="107" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="9" font-weight="600" text-anchor="middle">Respuesta</text>
+  <text x="1369" y="120" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="8" text-anchor="middle" opacity="0.8">observaciones DOF</text>
+  <!-- "CNSF" label outside -->
+  <rect x="1309" y="610" width="120" height="26" rx="3" fill="#EEECEA"/>
+  <text x="1369" y="628" fill="#4A4840" font-family="IBM Plex Sans" font-size="8.5" font-weight="600" text-anchor="middle">→ SESA alimentados</text>
+  <!-- Badge -->
+  <circle cx="1309" cy="225" r="10" fill="#C07B2A"/>
+  <text x="1309" y="229" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" font-weight="600">9</text>
+</g>
+
+<!-- ══ STEP TITLE BAR (top of each step) ══ -->
+<g class="node hidden" data-phase="1">
+  <text x="233" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">Planeación</text>
+</g>
+<g class="node hidden" data-phase="2">
+  <text x="375" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">Extracción</text>
+</g>
+<g class="node hidden" data-phase="3">
+  <text x="517" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">Validación</text>
+</g>
+<g class="node hidden" data-phase="4">
+  <text x="659" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">Cálculos</text>
+</g>
+<g class="node hidden" data-phase="5">
+  <text x="801" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">Construcción .TXT</text>
+</g>
+<g class="node hidden" data-phase="6">
+  <text x="943" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">Conciliación</text>
+</g>
+<g class="node hidden" data-phase="7">
+  <text x="1085" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">Firma</text>
+</g>
+<g class="node hidden" data-phase="8">
+  <text x="1227" y="65" fill="#1C1B18" font-family="IBM Plex Sans" font-size="10" font-weight="600" text-anchor="middle">ZIP → PGP → SEIVE</text>
+</g>
+<g class="node hidden" data-phase="9">
+  <text x="1369" y="65" fill="#C07B2A" font-family="IBM Plex Sans" font-size="10" font-weight="700" text-anchor="middle">Acuse &amp; Cierre</text>
+</g>
+
+<!-- Active step highlight (column highlight) - drawn last -->
+<rect id="stepHighlight" x="162" y="0" width="142" height="640" fill="#1B4F8A" opacity="0.04" rx="0" pointer-events="none"/>
+
+<!-- Watermark step number -->
+<text id="stepWatermark" x="1420" y="640" fill="#D9D5CE" font-family="IBM Plex Mono" font-size="72" text-anchor="end" opacity="0.2">P1</text>
+
+</g></svg>
+</div>
+
+<script>
+const TOTAL = 9;
+let phase = 0;
+let playing = false;
+let timer = null;
+
+// Step x positions for highlight
+const STEP_X = [162, 304, 446, 588, 730, 872, 1014, 1156, 1298];
+
+const LABELS = [
+  "P1 — Cumplimiento Regulatorio elabora el calendario anual alineado a fechas límite de la CUSF, DOF y cierres contables internos.",
+  "P2 — Actuaría coordina la extracción de datos: Suscripción aporta pólizas/endosos, Siniestros los importes pagados/pendientes, Reaseguro los contratos cedidos. TI ejecuta los ETL desde el DWH.",
+  "P3 — TI y Actuaría ejecutan controles de integridad referencial, eliminan duplicados, reclasifican catálogos internos al catálogo CNSF (Anexo 38.1.2) y depuran registros faltantes.",
+  "P4 — Actuaría calcula primas devengadas, reservas específicas, triángulos de desarrollo (IBNR), siniestralidad y frecuencia por ramo. Contraloría concilia con RR-7 (estados financieros).",
+  "P5 — TI genera los archivos .TXT siguiendo los layouts del SEIVE: campo por campo, tipo, longitud y formato exactos según los Anexos 38.1.9-b a 38.1.9-z de la CUSF.",
+  "P6 — Actuaría y Contraloría concilian RR-8 contra RR-1 (corporativo), RR-3 (reservas) y RR-7 (estados financieros) para garantizar el 'dato único' antes del envío.",
+  "P7 — El actuario responsable firma el escrito de precisiones (producto ESC, PDF). Alta Dirección y Comité de Auditoría revisan indicadores. Auditoría Interna valida los controles (Cap. 3.3 CUSF).",
+  "P8 — TI comprime los archivos .TXT en ZIP, cifra el paquete con la llave pública PGP de la CNSF y lo carga al portal SEIVE (Cap. 39.2 CUSF — información estructurada).",
+  "P9 — CNSF emite acuse automático por SEIVE. Si hay errores de formato o catálogos, Cumplimiento atiende observaciones vía Mesa de Ayuda (soporte_MA@cnsf.gob.mx) y reenvía. Los SESA quedan alimentados.",
+];
+
+function update() {
+  document.querySelectorAll('.node[data-phase], .edge[data-phase]').forEach(el => {
+    const p = parseInt(el.dataset.phase);
+    el.classList.toggle('hidden', p > phase);
+  });
+  document.getElementById('phaseLabel').textContent = phase > 0 ? LABELS[phase - 1] : '—';
+  document.getElementById('phasePill').textContent = phase + ' / ' + TOTAL;
+  document.getElementById('btnPrev').disabled = phase <= 1;
+  document.getElementById('btnNext').disabled = phase >= TOTAL;
+  document.getElementById('progressBar').style.width = (phase / TOTAL * 100) + '%';
+
+  // Update step highlight
+  const hl = document.getElementById('stepHighlight');
+  if (phase >= 1 && phase <= 9) {
+    hl.setAttribute('x', STEP_X[phase - 1]);
+    hl.setAttribute('opacity', '0.06');
+  } else {
+    hl.setAttribute('opacity', '0');
+  }
+
+  const wm = document.getElementById('stepWatermark');
+  if (wm) wm.textContent = phase > 0 ? 'P' + phase : '';
+}
+
+function nextPhase() {
+  if (phase < TOTAL) { phase++; update(); }
+  else if (playing) stopPlay();
+}
+function prevPhase() {
+  if (phase > 1) { phase--; update(); }
+}
+function startPlay() {
+  playing = true;
+  document.getElementById('btnPlay').textContent = '⏸ Pausar';
+  timer = setInterval(() => {
+    if (phase >= TOTAL) { stopPlay(); return; }
+    nextPhase();
+  }, 2800);
+}
+function stopPlay() {
+  playing = false;
+  clearInterval(timer);
+  document.getElementById('btnPlay').textContent = '▶ Auto';
+}
+function togglePlay() { playing ? stopPlay() : startPlay(); }
+
+
+
+phase = 1;
+update();
+setTimeout(startPlay, 800);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { stopPlay(); nextPhase(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { stopPlay(); prevPhase(); }
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+</script>
+</body>
+</html>

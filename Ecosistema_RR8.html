@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ecosistema RR-8 — Diagrama Animado</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #F7F5F2;
+    font-family: 'IBM Plex Sans', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #1C1B18;
+  }
+  header {
+    padding: 16px 32px 12px;
+    border-bottom: 1px solid #D9D5CE;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .hd-left h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #1C1B18;
+  }
+  .hd-left .eyebrow {
+    font-size: 11px;
+    font-weight: 400;
+    color: #9B9690;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  #phaseLabel {
+    font-size: 13px;
+    color: #4A4840;
+    margin-top: 3px;
+    min-height: 18px;
+    transition: opacity 0.3s;
+    max-width: 580px;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn {
+    padding: 7px 16px;
+    border: 1px solid #D9D5CE;
+    background: white;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    color: #1C1B18;
+    transition: background 0.12s;
+    user-select: none;
+  }
+  .btn:hover { background: #EEECEA; }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn.primary {
+    background: #1B4F8A;
+    color: white;
+    border-color: #1B4F8A;
+  }
+  .btn.primary:hover { background: #153e6e; }
+  .phase-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #6B6860;
+    padding: 4px 10px;
+    background: #EEECEA;
+    border-radius: 20px;
+    min-width: 52px;
+    text-align: center;
+  }
+  .legend {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    color: #6B6860;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+  }
+  .svg-wrap {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #F7F5F2;
+  }
+  #diagram { width: 100%; height: 100%; display: block; overflow: visible; }
+
+  /* ── Node base ── */
+  .node { transition: opacity 0.55s ease, transform 0.55s ease; transform-origin: center; }
+  .node.hidden { opacity: 0; transform: scale(0.85); pointer-events: none; }
+
+  /* ── Edge base ── */
+  .edge { transition: opacity 0.45s ease; }
+  .edge.hidden { opacity: 0; }
+
+  /* ── Label phase ── */
+  .phase-tag { transition: opacity 0.4s ease; }
+  .phase-tag.hidden { opacity: 0; }
+
+  /* progress bar */
+  #progressBar {
+    height: 2px;
+    background: #1B4F8A;
+    width: 0%;
+    transition: width 0.4s ease;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-left">
+    <div class="eyebrow">Reporte Regulatorio 8</div>
+    <h1>Ecosistema RR-8 — Marco regulatorio y flujo de información</h1>
+    <div id="phaseLabel">Iniciando…</div>
+  </div>
+  <div class="controls">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#EEF3FA;border:1.5px solid #1B4F8A"></div>Regulador</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FBF0E0;border:1.5px solid #C07B2A"></div>Marco legal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E8F2EC;border:1.5px solid #2A7A4A"></div>Aseguradora</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1B4F8A"></div>RR-8</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F0EBF8;border:1.5px solid #6B42A0"></div>Sistema / TI</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E8EFF8;border:1.5px solid #2D6CB5"></div>SESA / FES</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FBF5E0;border:1.5px solid #A07028"></div>Outputs</div>
+    </div>
+    <button class="btn" id="btnPrev" onclick="prevPhase()">← Anterior</button>
+    <span class="phase-pill" id="phasePill">0 / 11</span>
+    <button class="btn" id="btnNext" onclick="nextPhase()">Siguiente →</button>
+    <button class="btn primary" id="btnPlay" onclick="togglePlay()">▶ Auto</button>
+  </div>
+</header>
+<div id="progressBar"></div>
+
+<div class="svg-wrap">
+<svg id="diagram" viewBox="0 0 1440 680" preserveAspectRatio="xMidYMid meet"><g id="dc">
+<defs>
+  <!-- Arrow markers -->
+  <marker id="aBlue" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#1B4F8A"/>
+  </marker>
+  <marker id="aAmber" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#C07B2A"/>
+  </marker>
+  <marker id="aGray" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#6B6860"/>
+  </marker>
+  <marker id="aPurple" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#6B42A0"/>
+  </marker>
+  <marker id="aGreen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#2A7A4A"/>
+  </marker>
+  <marker id="aOut" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#A07028"/>
+  </marker>
+  <marker id="aBlueBi" markerWidth="8" markerHeight="8" refX="1" refY="3" orient="auto">
+    <path d="M8,0 L8,6 L0,3 z" fill="#1B4F8A"/>
+  </marker>
+</defs>
+
+<!-- ═══════════════════════════════════════════════ EDGES ═══ -->
+
+<!-- Phase 2: LISF → CNSF -->
+<g class="edge hidden" data-phase="2">
+  <line x1="248" y1="82" x2="655" y2="82" stroke="#C07B2A" stroke-width="1.8" marker-end="url(#aAmber)" stroke-dasharray="4,0"/>
+  <text x="432" y="72" fill="#C07B2A" font-size="10" font-family="IBM Plex Sans" text-anchor="middle" font-weight="500">habilita &amp; obliga</text>
+</g>
+
+<!-- Phase 3: CUSF → CNSF -->
+<g class="edge hidden" data-phase="3">
+  <path d="M 555,182 Q 640,160 665,118" stroke="#C07B2A" stroke-width="1.5" fill="none" marker-end="url(#aAmber)" stroke-dasharray="5,3"/>
+  <text x="630" y="168" fill="#C07B2A" font-size="10" font-family="IBM Plex Sans" text-anchor="middle">emitida por</text>
+</g>
+
+<!-- Phase 3: CUSF → AXA (obligation) -->
+<g class="edge hidden" data-phase="3">
+  <path d="M 440,210 Q 260,260 240,372" stroke="#C07B2A" stroke-width="1.5" fill="none" marker-end="url(#aAmber)" stroke-dasharray="5,3"/>
+  <text x="308" y="285" fill="#C07B2A" font-size="10" font-family="IBM Plex Sans" text-anchor="middle" transform="rotate(-30,308,285)">Art. 38.1.9</text>
+</g>
+
+<!-- Phase 5: AXA → inputs -->
+<g class="edge hidden" data-phase="5">
+  <path d="M 228,395 Q 258,330 272,309" stroke="#2A7A4A" stroke-width="1.4" fill="none" marker-end="url(#aGreen)"/>
+  <path d="M 228,402 L 272,385" stroke="#2A7A4A" stroke-width="1.4" fill="none" marker-end="url(#aGreen)"/>
+  <path d="M 228,410 Q 255,450 272,460" stroke="#2A7A4A" stroke-width="1.4" fill="none" marker-end="url(#aGreen)"/>
+</g>
+
+<!-- Phase 6: Inputs → RR-8 -->
+<g class="edge hidden" data-phase="6">
+  <path d="M 435,309 Q 462,330 488,365" stroke="#4A4840" stroke-width="1.6" fill="none" marker-end="url(#aGray)"/>
+  <line x1="435" y1="385" x2="488" y2="388" stroke="#4A4840" stroke-width="1.6" marker-end="url(#aGray)"/>
+  <path d="M 435,460 Q 462,445 488,408" stroke="#4A4840" stroke-width="1.6" fill="none" marker-end="url(#aGray)"/>
+  <text x="462" y="325" fill="#4A4840" font-size="9.5" font-family="IBM Plex Sans" text-anchor="middle">insumos</text>
+</g>
+
+<!-- Phase 7: RR-8 → SEIVE -->
+<g class="edge hidden" data-phase="7">
+  <line x1="682" y1="388" x2="712" y2="388" stroke="#6B42A0" stroke-width="2" marker-end="url(#aPurple)"/>
+  <text x="697" y="378" fill="#6B42A0" font-size="9.5" font-family="IBM Plex Sans" text-anchor="middle">.TXT</text>
+</g>
+
+<!-- Phase 8: SEIVE → CNSF (delivery loop) -->
+<g class="edge hidden" data-phase="8">
+  <path d="M 895,378 C 940,300 920,140 875,110" stroke="#6B42A0" stroke-width="1.8" fill="none" marker-end="url(#aPurple)"/>
+  <text x="940" y="250" fill="#6B42A0" font-size="10" font-family="IBM Plex Sans" text-anchor="start">entrega PGP</text>
+</g>
+
+<!-- Phase 9: CNSF bus → SESA + FES -->
+<g class="edge hidden" data-phase="9">
+  <!-- vertical bus line from CNSF right edge down -->
+  <line x1="920" y1="82" x2="920" y2="488" stroke="#1B4F8A" stroke-width="1.4" opacity="0.35"/>
+  <!-- horizontal branches to each SESA -->
+  <line x1="920" y1="137" x2="952" y2="137" stroke="#1B4F8A" stroke-width="1.4" marker-end="url(#aBlue)"/>
+  <line x1="920" y1="205" x2="952" y2="205" stroke="#1B4F8A" stroke-width="1.4" marker-end="url(#aBlue)"/>
+  <line x1="920" y1="270" x2="952" y2="270" stroke="#1B4F8A" stroke-width="1.4" marker-end="url(#aBlue)"/>
+  <line x1="920" y1="335" x2="952" y2="335" stroke="#1B4F8A" stroke-width="1.4" marker-end="url(#aBlue)"/>
+  <line x1="920" y1="400" x2="952" y2="400" stroke="#1B4F8A" stroke-width="1.4" marker-end="url(#aBlue)"/>
+  <line x1="920" y1="465" x2="952" y2="465" stroke="#1B4F8A" stroke-width="1.4" marker-end="url(#aBlue)"/>
+  <!-- from CNSF right edge to bus -->
+  <line x1="875" y1="82" x2="920" y2="82" stroke="#1B4F8A" stroke-width="1.4"/>
+</g>
+
+<!-- Phase 10: FES + SESA → outputs -->
+<g class="edge hidden" data-phase="10">
+  <!-- vertical bus on output side -->
+  <line x1="1145" y1="137" x2="1145" y2="488" stroke="#A07028" stroke-width="1.2" opacity="0.35"/>
+  <!-- from SESAs to bus -->
+  <line x1="1135" y1="137" x2="1145" y2="137" stroke="#A07028" stroke-width="1.2"/>
+  <line x1="1135" y1="205" x2="1145" y2="205" stroke="#A07028" stroke-width="1.2"/>
+  <line x1="1135" y1="270" x2="1145" y2="270" stroke="#A07028" stroke-width="1.2"/>
+  <line x1="1135" y1="335" x2="1145" y2="335" stroke="#A07028" stroke-width="1.2"/>
+  <line x1="1135" y1="400" x2="1145" y2="400" stroke="#A07028" stroke-width="1.2"/>
+  <line x1="1135" y1="465" x2="1145" y2="465" stroke="#A07028" stroke-width="1.2"/>
+  <!-- bus to outputs -->
+  <line x1="1145" y1="252" x2="1205" y2="252" stroke="#A07028" stroke-width="1.4" marker-end="url(#aOut)"/>
+  <line x1="1145" y1="380" x2="1205" y2="380" stroke="#A07028" stroke-width="1.4" marker-end="url(#aOut)"/>
+  <line x1="1145" y1="508" x2="1205" y2="508" stroke="#A07028" stroke-width="1.4" marker-end="url(#aOut)"/>
+  <text x="1170" y="248" fill="#A07028" font-size="9" font-family="IBM Plex Sans" text-anchor="middle">estudios &amp; tarifas</text>
+  <text x="1170" y="376" fill="#A07028" font-size="9" font-family="IBM Plex Sans" text-anchor="middle">datos abiertos</text>
+  <text x="1170" y="504" fill="#A07028" font-size="9" font-family="IBM Plex Sans" text-anchor="middle">publicación</text>
+</g>
+
+<!-- Phase 11: Cross-reference RRs → RR-8 -->
+<g class="edge hidden" data-phase="11">
+  <path d="M 435,558 Q 435,500 490,428" stroke="#1B4F8A" stroke-width="1.4" fill="none" stroke-dasharray="5,3" marker-end="url(#aBlue)" marker-start="url(#aBlueBi)"/>
+  <path d="M 585,558 L 585,428" stroke="#1B4F8A" stroke-width="1.4" fill="none" stroke-dasharray="5,3" marker-end="url(#aBlue)" marker-start="url(#aBlueBi)"/>
+  <path d="M 735,558 Q 735,500 685,428" stroke="#1B4F8A" stroke-width="1.4" fill="none" stroke-dasharray="5,3" marker-end="url(#aBlue)" marker-start="url(#aBlueBi)"/>
+  <text x="585" y="520" fill="#1B4F8A" font-size="9.5" font-family="IBM Plex Sans" text-anchor="middle">conciliación cruzada</text>
+</g>
+
+<!-- ═══════════════════════════════════════════════ NODES ═══ -->
+
+<!-- PHASE 1: CNSF -->
+<g class="node hidden" data-phase="1" id="n-cnsf">
+  <rect x="655" y="52" width="220" height="62" rx="4" fill="#EEF3FA" stroke="#1B4F8A" stroke-width="2"/>
+  <text x="765" y="76" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="14" font-weight="600" text-anchor="middle">CNSF</text>
+  <text x="765" y="98" fill="#1B4F8A" font-family="IBM Plex Sans" font-size="9.5" text-anchor="middle" opacity="0.75">Comisión Nacional de Seguros y Fianzas</text>
+  <!-- diamond indicator for "authority" -->
+  <polygon points="765,48 772,56 765,64 758,56" fill="#1B4F8A" opacity="0" style="display:none"/>
+</g>
+
+<!-- PHASE 2: LISF -->
+<g class="node hidden" data-phase="2" id="n-lisf">
+  <rect x="80" y="55" width="168" height="55" rx="4" fill="#FBF0E0" stroke="#C07B2A" stroke-width="1.8"/>
+  <text x="164" y="78" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="13" font-weight="600" text-anchor="middle">LISF</text>
+  <text x="164" y="97" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="9.5" text-anchor="middle" opacity="0.8">Ley de Instituciones de Seguros</text>
+</g>
+
+<!-- PHASE 3: CUSF -->
+<g class="node hidden" data-phase="3" id="n-cusf">
+  <rect x="330" y="155" width="225" height="55" rx="4" fill="#FBF0E0" stroke="#C07B2A" stroke-width="1.8"/>
+  <text x="442" y="178" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="13" font-weight="600" text-anchor="middle">CUSF</text>
+  <text x="442" y="197" fill="#7A4E1A" font-family="IBM Plex Sans" font-size="9.5" text-anchor="middle" opacity="0.8">Circular Única · Disposición 38.1.9 Anexos a–z</text>
+</g>
+
+<!-- PHASE 4: AXA -->
+<g class="node hidden" data-phase="4" id="n-axa">
+  <rect x="62" y="368" width="166" height="65" rx="4" fill="#E8F2EC" stroke="#2A7A4A" stroke-width="2"/>
+  <text x="145" y="396" fill="#1A5A34" font-family="IBM Plex Sans" font-size="15" font-weight="600" text-anchor="middle">AXA</text>
+  <text x="145" y="416" fill="#1A5A34" font-family="IBM Plex Sans" font-size="9.5" text-anchor="middle" opacity="0.8">Institución Aseguradora</text>
+  <text x="145" y="428" fill="#1A5A34" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.6">(sujeto obligado LISF)</text>
+</g>
+
+<!-- PHASE 5: Inputs -->
+<g class="node hidden" data-phase="5">
+  <rect x="272" y="283" width="163" height="46" rx="3" fill="#F7F5F2" stroke="#9B9690" stroke-width="1.2"/>
+  <text x="353" y="302" fill="#4A4840" font-family="IBM Plex Sans" font-size="11.5" font-weight="500" text-anchor="middle">Primas</text>
+  <text x="353" y="320" fill="#6B6860" font-family="IBM Plex Sans" font-size="9" text-anchor="middle">Emisión, cartera, endosos</text>
+</g>
+<g class="node hidden" data-phase="5">
+  <rect x="272" y="360" width="163" height="46" rx="3" fill="#F7F5F2" stroke="#9B9690" stroke-width="1.2"/>
+  <text x="353" y="380" fill="#4A4840" font-family="IBM Plex Sans" font-size="11.5" font-weight="500" text-anchor="middle">Siniestros</text>
+  <text x="353" y="397" fill="#6B6860" font-family="IBM Plex Sans" font-size="9" text-anchor="middle">Pagados, pendientes, IBNR</text>
+</g>
+<g class="node hidden" data-phase="5">
+  <rect x="272" y="435" width="163" height="46" rx="3" fill="#F7F5F2" stroke="#9B9690" stroke-width="1.2"/>
+  <text x="353" y="455" fill="#4A4840" font-family="IBM Plex Sans" font-size="11.5" font-weight="500" text-anchor="middle">Reaseguro</text>
+  <text x="353" y="473" fill="#6B6860" font-family="IBM Plex Sans" font-size="9" text-anchor="middle">Cedido, tomado, contratos</text>
+</g>
+
+<!-- PHASE 6: RR-8 -->
+<g class="node hidden" data-phase="6" id="n-rr8">
+  <rect x="488" y="355" width="194" height="72" rx="5" fill="#1B4F8A"/>
+  <text x="585" y="382" fill="white" font-family="IBM Plex Sans" font-size="17" font-weight="600" text-anchor="middle">RR-8</text>
+  <text x="585" y="400" fill="white" font-family="IBM Plex Sans" font-size="9.5" text-anchor="middle" opacity="0.8">FES · Sistemas SESA</text>
+  <text x="585" y="415" fill="white" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" opacity="0.6">1 producto .TXT por ramo</text>
+</g>
+
+<!-- PHASE 7: SEIVE -->
+<g class="node hidden" data-phase="7" id="n-seive">
+  <rect x="712" y="358" width="183" height="62" rx="4" fill="#F0EBF8" stroke="#6B42A0" stroke-width="1.8"/>
+  <text x="803" y="381" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="13" font-weight="600" text-anchor="middle">SEIVE</text>
+  <text x="803" y="398" fill="#4A1F8A" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.8">Sistema de Entrega de Información</text>
+  <text x="803" y="411" fill="#4A1F8A" font-family="IBM Plex Mono" font-size="8.5" text-anchor="middle" opacity="0.7">.TXT → ZIP → PGP → acuse</text>
+</g>
+
+<!-- PHASE 8: SESA group label (invisible brace) -->
+<g class="node hidden" data-phase="8">
+  <text x="950" y="172" fill="#2D6CB5" font-family="IBM Plex Sans" font-size="9.5" font-weight="500" opacity="0.7">Sistemas Estadísticos por ramo (SESA)</text>
+</g>
+
+<!-- PHASE 9: SESA nodes -->
+<g class="node hidden" data-phase="9" id="n-fes">
+  <rect x="952" y="112" width="183" height="50" rx="3" fill="#E8EFF8" stroke="#2D6CB5" stroke-width="1.5"/>
+  <text x="1043" y="132" fill="#1B4072" font-family="IBM Plex Sans" font-size="11" font-weight="600" text-anchor="middle">FES</text>
+  <text x="1043" y="149" fill="#1B4072" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.8">Formas Estadísticas de Seguros</text>
+</g>
+<g class="node hidden" data-phase="9">
+  <rect x="952" y="182" width="183" height="46" rx="3" fill="#E8EFF8" stroke="#2D6CB5" stroke-width="1.3"/>
+  <text x="1043" y="202" fill="#1B4072" font-family="IBM Plex Sans" font-size="10.5" font-weight="500" text-anchor="middle">SESA Automóviles</text>
+  <text x="1043" y="218" fill="#1B4072" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Flotilla · particular · carga</text>
+</g>
+<g class="node hidden" data-phase="9">
+  <rect x="952" y="247" width="183" height="46" rx="3" fill="#E8EFF8" stroke="#2D6CB5" stroke-width="1.3"/>
+  <text x="1043" y="267" fill="#1B4072" font-family="IBM Plex Sans" font-size="10.5" font-weight="500" text-anchor="middle">SESA Vida &amp; Pensiones</text>
+  <text x="1043" y="283" fill="#1B4072" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Individual · grupo · dotales</text>
+</g>
+<g class="node hidden" data-phase="9">
+  <rect x="952" y="312" width="183" height="46" rx="3" fill="#E8EFF8" stroke="#2D6CB5" stroke-width="1.3"/>
+  <text x="1043" y="332" fill="#1B4072" font-family="IBM Plex Sans" font-size="10.5" font-weight="500" text-anchor="middle">SESA Salud &amp; A&amp;E</text>
+  <text x="1043" y="348" fill="#1B4072" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">GMM · AP escolar · salud</text>
+</g>
+<g class="node hidden" data-phase="9">
+  <rect x="952" y="377" width="183" height="46" rx="3" fill="#E8EFF8" stroke="#2D6CB5" stroke-width="1.3"/>
+  <text x="1043" y="397" fill="#1B4072" font-family="IBM Plex Sans" font-size="10.5" font-weight="500" text-anchor="middle">SESA Terremoto &amp; Hidro</text>
+  <text x="1043" y="413" fill="#1B4072" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Riesgos catastróficos</text>
+</g>
+<g class="node hidden" data-phase="9">
+  <rect x="952" y="442" width="183" height="46" rx="3" fill="#E8EFF8" stroke="#2D6CB5" stroke-width="1.3"/>
+  <text x="1043" y="462" fill="#1B4072" font-family="IBM Plex Sans" font-size="10.5" font-weight="500" text-anchor="middle">SESA RC · Incendio · Otros</text>
+  <text x="1043" y="478" fill="#1B4072" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle" opacity="0.7">Crédito · transporte · div. técnicos</text>
+</g>
+
+<!-- PHASE 10: Outputs -->
+<g class="node hidden" data-phase="10">
+  <rect x="1205" y="225" width="180" height="55" rx="4" fill="#FBF5E0" stroke="#A07028" stroke-width="1.5"/>
+  <text x="1295" y="248" fill="#5A3E0A" font-family="IBM Plex Sans" font-size="12" font-weight="600" text-anchor="middle">AMIS</text>
+  <text x="1295" y="267" fill="#5A3E0A" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.8">Estudios técnicos · tarifas de referencia</text>
+</g>
+<g class="node hidden" data-phase="10">
+  <rect x="1205" y="353" width="180" height="55" rx="4" fill="#FBF5E0" stroke="#A07028" stroke-width="1.5"/>
+  <text x="1295" y="375" fill="#5A3E0A" font-family="IBM Plex Sans" font-size="12" font-weight="600" text-anchor="middle">datos.gob.mx</text>
+  <text x="1295" y="394" fill="#5A3E0A" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.8">Datos abiertos del sector asegurador</text>
+</g>
+<g class="node hidden" data-phase="10">
+  <rect x="1205" y="480" width="180" height="55" rx="4" fill="#FBF5E0" stroke="#A07028" stroke-width="1.5"/>
+  <text x="1295" y="502" fill="#5A3E0A" font-family="IBM Plex Sans" font-size="12" font-weight="600" text-anchor="middle">Anuario Estadístico</text>
+  <text x="1295" y="520" fill="#5A3E0A" font-family="IBM Plex Sans" font-size="9" text-anchor="middle" opacity="0.8">CNSF · Supervisión prudencial</text>
+</g>
+
+<!-- PHASE 11: Other RRs (cross-reference) -->
+<g class="node hidden" data-phase="11">
+  <rect x="365" y="558" width="140" height="46" rx="3" fill="#EEECEA" stroke="#9B9690" stroke-width="1.2"/>
+  <text x="435" y="577" fill="#4A4840" font-family="IBM Plex Sans" font-size="11.5" font-weight="600" text-anchor="middle">RR-1</text>
+  <text x="435" y="594" fill="#6B6860" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle">Info. corporativa</text>
+</g>
+<g class="node hidden" data-phase="11">
+  <rect x="515" y="558" width="140" height="46" rx="3" fill="#EEECEA" stroke="#9B9690" stroke-width="1.2"/>
+  <text x="585" y="577" fill="#4A4840" font-family="IBM Plex Sans" font-size="11.5" font-weight="600" text-anchor="middle">RR-3</text>
+  <text x="585" y="594" fill="#6B6860" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle">Reservas técnicas</text>
+</g>
+<g class="node hidden" data-phase="11">
+  <rect x="665" y="558" width="140" height="46" rx="3" fill="#EEECEA" stroke="#9B9690" stroke-width="1.2"/>
+  <text x="735" y="577" fill="#4A4840" font-family="IBM Plex Sans" font-size="11.5" font-weight="600" text-anchor="middle">RR-7</text>
+  <text x="735" y="594" fill="#6B6860" font-family="IBM Plex Sans" font-size="8.5" text-anchor="middle">Estados financieros</text>
+</g>
+<g class="node hidden" data-phase="11">
+  <text x="585" y="545" fill="#6B6860" font-family="IBM Plex Sans" font-size="9.5" text-anchor="middle">Otros reportes regulatorios — conciliación cruzada con el RR-8</text>
+</g>
+
+<!-- ═ Phase counter watermark ═ -->
+<text id="phaseBg" x="1410" y="670" fill="#D9D5CE" font-family="IBM Plex Mono" font-size="72" text-anchor="end" opacity="0.25">01</text>
+
+</g></svg>
+</div>
+
+<script>
+const TOTAL = 11;
+let phase = 0;
+let playing = false;
+let timer = null;
+
+const LABELS = [
+  "La autoridad reguladora: la CNSF supervisa, controla y vigila al sector asegurador mexicano.",
+  "La LISF (Ley de Instituciones de Seguros y Fianzas) establece la obligación legal de reportar a la CNSF.",
+  "La CUSF (Circular Única de Seguros y Fianzas), Disposición 38.1.9 y sus Anexos a–z, define el contenido exacto del RR-8.",
+  "AXA, como institución aseguradora autorizada, está obligada a presentar el RR-8 según los ramos en que opera.",
+  "Los insumos primarios: primas emitidas (suscripción/emisión), siniestros (pagados y pendientes) y contratos de reaseguro.",
+  "Con esos datos se consolida el RR-8: un conjunto de archivos .TXT, uno por cada Sistema Estadístico (SESA) o ramo.",
+  "Los archivos se comprimen en ZIP y se cifran con PGP antes de enviarse vía SEIVE — el portal de entrega electrónica de la CNSF.",
+  "El SEIVE entrega el reporte a la CNSF, que valida formato, catálogos y lo registra en el expediente regulatorio.",
+  "La CNSF distribuye la información en Sistemas Estadísticos por ramo (SESA) y en las Formas Estadísticas de Seguros (FES).",
+  "Los datos alimentan a la AMIS (estudios técnicos y tarifas), datos.gob.mx (datos abiertos) y el Anuario Estadístico CNSF.",
+  "El RR-8 se concilia cruzadamente con RR-1 (corporativo), RR-3 (reservas) y RR-7 (estados financieros) para consistencia.",
+];
+
+function update() {
+  document.querySelectorAll('.node[data-phase], .edge[data-phase]').forEach(el => {
+    const p = parseInt(el.dataset.phase);
+    el.classList.toggle('hidden', p > phase);
+  });
+  document.getElementById('phaseLabel').textContent = phase > 0 ? LABELS[phase - 1] : '—';
+  document.getElementById('phasePill').textContent = phase + ' / ' + TOTAL;
+  document.getElementById('btnPrev').disabled = phase <= 1;
+  document.getElementById('btnNext').disabled = phase >= TOTAL;
+  document.getElementById('progressBar').style.width = (phase / TOTAL * 100) + '%';
+  const bg = document.getElementById('phaseBg');
+  if (bg) bg.textContent = String(phase).padStart(2, '0');
+}
+
+function nextPhase() {
+  if (phase < TOTAL) { phase++; update(); }
+  else if (playing) stopPlay();
+}
+
+function prevPhase() {
+  if (phase > 1) { phase--; update(); }
+}
+
+function startPlay() {
+  playing = true;
+  document.getElementById('btnPlay').textContent = '⏸ Pausar';
+  timer = setInterval(() => {
+    if (phase >= TOTAL) { stopPlay(); return; }
+    nextPhase();
+  }, 2600);
+}
+
+function stopPlay() {
+  playing = false;
+  clearInterval(timer);
+  document.getElementById('btnPlay').textContent = '▶ Auto';
+}
+
+function togglePlay() {
+  playing ? stopPlay() : startPlay();
+}
+
+// Scale SVG to fit container
+
+
+// Init
+phase = 1;
+update();
+setTimeout(startPlay, 800);
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { stopPlay(); nextPhase(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { stopPlay(); prevPhase(); }
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+</script>
+</body>
+</html>
